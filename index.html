@@ -3,36 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Device Lookup</title>
+    <title>Device Lookup - System v2.0</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Device Lookup</h1>
-        <div class="card">
-            <h2>Manual Search</h2>
-            <input id="serialInput" type="text" placeholder="Enter Serial Number" required>
-            <button onclick="searchDevice()">Search</button>
+        <div class="header">
+            <div class="version">◇ SYSTEM V2.0</div>
+            <h1>Device <span class="highlight">Lookup</span></h1>
         </div>
-        <div class="card">
-            <h2>OCR Scan</h2>
-            <p>Take a photo of the device label to extract serial number.</p>
-            <a href="scan.html" class="button-link">Go to Scan Page</a>
+
+        <!-- API Key Input -->
+        <div class="api-section">
+            <input type="password" id="apiKey" placeholder="API KEY sk-ant-api03-..." class="api-input">
         </div>
-        <div class="card">
-            <h2>QR Code Scan</h2>
-            <p>Scan a QR code that links to device information.</p>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('manual')">📋 MANUAL</button>
+            <button class="tab-btn" onclick="switchTab('ocr')">📷 OCR SCAN</button>
+            <button class="tab-btn" onclick="switchTab('qrcode')">📊 QR CODE</button>
         </div>
+
+        <!-- MANUAL TAB -->
+        <div id="manual" class="tab-content active">
+            <div class="card">
+                <h2>Serial Number</h2>
+                <input type="text" id="serialInput" placeholder="XXXX XXXX XXXXXXXX" class="serial-input">
+                <button class="btn-primary" onclick="searchDevice()">🔍 ค้นหาอุปกรณ์</button>
+            </div>
+        </div>
+
+        <!-- OCR SCAN TAB -->
+        <div id="ocr" class="tab-content">
+            <div class="card">
+                <h2 class="section-title">📷 ถ่ายรูปอ่านหนังสือ</h2>
+                <p class="subtitle">AI จะอ่าน Serial Number ให้อัตโนมัติ</p>
+                <input type="file" id="ocrInput" accept="image/*" capture="environment" class="file-input">
+                <div id="ocrPreview" class="preview-box"></div>
+                <div id="ocrResult" class="result-section"></div>
+                <button class="btn-primary" onclick="processOCR()">🤖 วิเคราะห์หรือดึง AI</button>
+            </div>
+        </div>
+
+        <!-- QR CODE TAB -->
+        <div id="qrcode-tab" class="tab-content">
+            <div class="card">
+                <div id="qrError" class="error-box" style="display:none;"></div>
+                <h2 class="section-title">📊 เปิดกล้องสแกน QR</h2>
+                <p class="subtitle">เครื่องมือโหลดไฟล์ QR</p>
+                <button class="btn-primary" onclick="toggleQRCamera()">📹 เปิดกล้อง</button>
+                <div id="qrVideo" style="display:none;">
+                    <video id="qrVideoElement" width="100%" style="border-radius: 8px; margin: 10px 0;"></video>
+                </div>
+                <input type="file" id="qrInput" accept="image/*" onchange="processQRImage()" class="file-input">
+                <div id="qrResultText" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        <!-- Device Information Display -->
+        <div id="deviceInfo" class="deviceInfo" style="display:none;"></div>
     </div>
-    <script>
-        function searchDevice() {
-            const serial = document.getElementById('serialInput').value.trim();
-            if (serial) {
-                window.location.href = `device.html?serial=${encodeURIComponent(serial)}`;
-            } else {
-                alert('Please enter a serial number.');
-            }
-        }
-    </script>
+
+    <script src="app.js"></script>
 </body>
 </html>

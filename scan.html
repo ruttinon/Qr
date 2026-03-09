@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Scan</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>OCR Device Scan</h1>
+        <div class="card">
+            <h2>Upload Image</h2>
+            <input type="file" id="imageInput" accept="image/*" required>
+            <button onclick="processImage()">Process Image</button>
+        </div>
+        <div id="result" class="card" style="display: none;">
+            <h2>Detected Text</h2>
+            <pre id="detectedText"></pre>
+            <p id="extractedSerial"></p>
+        </div>
+    </div>
+    <script src="ocr.js"></script>
+</body>
+</html></content>
+<parameter name="filePath">c:\Users\promb\Desktop\qr-device-system\scan.html

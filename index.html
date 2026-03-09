@@ -1,49 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Device Lookup</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Lookup</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-<h1>Device Lookup</h1>
-
-<h2>Search Device</h2>
-<input id="serialInput" type="text" placeholder="Enter Serial Number">
-<button onclick="searchDevice()">Search</button>
-
-<h2>Generate QR Code</h2>
-<input id="qrSerialInput" type="text" placeholder="Enter Serial Number for QR">
-<button onclick="generateQR()">Generate QR</button>
-<div id="qrcode"></div>
-
-<script>
-function searchDevice(){
-    const serial = document.getElementById("serialInput").value.trim();
-    if(serial){
-        window.location.href = "device.html?serial=" + encodeURIComponent(serial);
-    }
-}
-
-function generateQR(){
-    const serial = document.getElementById("qrSerialInput").value.trim();
-    if(serial){
-        const baseUrl = "https://ruttinon.github.io/Qr/";
-        const url = baseUrl + "device.html?serial=" + encodeURIComponent(serial);
-        const qrDiv = document.getElementById("qrcode");
-        qrDiv.innerHTML = "";
-        new QRCode(qrDiv, {
-            text: url,
-            width: 256,
-            height: 256
-        });
-    }
-}
-</script>
-
+    <div class="container">
+        <h1>Device Lookup</h1>
+        <div class="card">
+            <h2>Manual Search</h2>
+            <input id="serialInput" type="text" placeholder="Enter Serial Number" required>
+            <button onclick="searchDevice()">Search</button>
+        </div>
+        <div class="card">
+            <h2>OCR Scan</h2>
+            <p>Take a photo of the device label to extract serial number.</p>
+            <a href="scan.html" class="button-link">Go to Scan Page</a>
+        </div>
+        <div class="card">
+            <h2>QR Code Scan</h2>
+            <p>Scan a QR code that links to device information.</p>
+        </div>
+    </div>
+    <script>
+        function searchDevice() {
+            const serial = document.getElementById('serialInput').value.trim();
+            if (serial) {
+                window.location.href = `device.html?serial=${encodeURIComponent(serial)}`;
+            } else {
+                alert('Please enter a serial number.');
+            }
+        }
+    </script>
 </body>
 </html>

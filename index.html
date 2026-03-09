@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Device Lookup</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+
+<h1>Device Lookup</h1>
+
+<h2>Search Device</h2>
+<input id="serialInput" type="text" placeholder="Enter Serial Number">
+<button onclick="searchDevice()">Search</button>
+
+<h2>Generate QR Code</h2>
+<input id="qrSerialInput" type="text" placeholder="Enter Serial Number for QR">
+<button onclick="generateQR()">Generate QR</button>
+<div id="qrcode"></div>
+
+<script>
+function searchDevice(){
+    const serial = document.getElementById("serialInput").value.trim();
+    if(serial){
+        window.location.href = "device.html?serial=" + encodeURIComponent(serial);
+    }
+}
+
+function generateQR(){
+    const serial = document.getElementById("qrSerialInput").value.trim();
+    if(serial){
+        const url = window.location.origin + window.location.pathname.replace('index.html', '') + "device.html?serial=" + encodeURIComponent(serial);
+        const qrDiv = document.getElementById("qrcode");
+        qrDiv.innerHTML = "";
+        new QRCode(qrDiv, {
+            text: url,
+            width: 256,
+            height: 256
+        });
+    }
+}
+</script>
+
+</body>
+</html>

@@ -11,8 +11,8 @@
     <div class="container">
         <h1>OCR Device Scan</h1>
         <div class="card">
-            <h2>Upload Image</h2>
-            <input type="file" id="imageInput" accept="image/*" required>
+            <h2>Take Photo or Upload Image</h2>
+            <input type="file" id="imageInput" accept="image/*" capture="environment" required>
             <button onclick="processImage()">Process Image</button>
         </div>
         <div id="result" class="card" style="display: none;">

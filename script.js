@@ -10,13 +10,21 @@ async function loadDevice() {
         return;
     }
 
+    console.log("Loading device for serial:", serial);
+
     try {
+        console.log("Fetching from:", sheetURL);
         const res = await fetch(sheetURL);
+        console.log("Fetch response:", res);
         if (!res.ok) {
             throw new Error("Failed to fetch data");
         }
         const data = await res.json();
+        console.log("Fetched data length:", data.length);
+        console.log("First item:", data[0]);
+
         const device = data.find(d => d["Serial No."] === serial);
+        console.log("Found device:", device);
 
         if (device) {
             container.innerHTML = `
@@ -32,8 +40,8 @@ async function loadDevice() {
             container.innerHTML = "<p>Device not found.</p>";
         }
     } catch (error) {
+        console.error("Error:", error);
         container.innerHTML = "<p>Error loading device information. Please try again later.</p>";
-        console.error(error);
     }
 }
 

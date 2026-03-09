@@ -3,7 +3,7 @@ const sheetName = "devices";
 const apiURL = `https://opensheet.elk.sh/${spreadsheetId}/${encodeURIComponent(sheetName)}`;
 
 // Optional: Backend OCR for faster processing (set your backend URL here)
-const BACKEND_URL = ''; // e.g., 'https://your-backend.herokuapp.com'
+const BACKEND_URL = 'http://localhost:5000'; // Local backend for testing
 
 let qrCameraActive = false;
 let tesseractWorker = null;

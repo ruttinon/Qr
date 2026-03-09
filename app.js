@@ -2,27 +2,95 @@ const spreadsheetId = "1CcctQMc7i0PoVJCemHI2WfkgJ_im8SyZn5jAx7JT7Ps";
 const sheetName = "devices";
 const apiURL = `https://opensheet.elk.sh/${spreadsheetId}/${encodeURIComponent(sheetName)}`;
 
+// Optional: Backend OCR for faster processing (set your backend URL here)
+const BACKEND_URL = ''; // e.g., 'https://your-backend.herokuapp.com'
+
 let qrCameraActive = false;
+let tesseractWorker = null;
+
+// Initialize Tesseract worker once for reuse
+async function initTesseract() {
+    if (tesseractWorker) return tesseractWorker;
+    
+    tesseractWorker = await Tesseract.createWorker({
+        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@4.0.4/tesseract-core.wasm.js',
+        logger: m => {
+            if (m.status === 'recognizing' && m.progress) {
+                console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+            }
+        }
+    });
+    
+    await tesseractWorker.load();
+    await tesseractWorker.loadLanguage('tha+eng');
+    await tesseractWorker.initialize('tha+eng');
+    
+    return tesseractWorker;
+}
+
+// Compress image for faster processing
+function compressImage(file, callback, maxWidth = 800, quality = 0.8) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > height) {
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxWidth) {
+                    width *= maxWidth / height;
+                    height = maxWidth;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob(callback, 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// OCR using Python backend (faster at scale)
+async function processOCRWithBackend(imageBlob) {
+    const formData = new FormData();
+    formData.append('image', imageBlob);
+    
+    const response = await fetch(`${BACKEND_URL}/ocr`, {
+        method: 'POST',
+        body: formData
+    });
+    
+    if (!response.ok) throw new Error('Backend OCR failed');
+    return await response.json();
+}
 
 // ========== TAB MANAGEMENT ==========
 function switchTab(tabName) {
-    // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // Remove active from all buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Show selected tab
     const tabElement = document.getElementById(tabName === 'qrcode' ? 'qrcode-tab' : tabName);
     if (tabElement) {
         tabElement.classList.add('active');
     }
     
-    // Activate button
     event.target.classList.add('active');
 }
 
@@ -36,7 +104,7 @@ function searchDevice() {
     fetchAndDisplayDevice(serial);
 }
 
-// ========== OCR PROCESSING ==========
+// ========== OCR PROCESSING (OPTIMIZED) ==========
 function processOCR() {
     const fileInput = document.getElementById('ocrInput');
     if (!fileInput.files[0]) {
@@ -47,6 +115,10 @@ function processOCR() {
     const file = fileInput.files[0];
     const preview = document.getElementById('ocrPreview');
     const result = document.getElementById('ocrResult');
+    const btn = event.target;
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังประมวลผล...';
     
     // Show preview
     const reader = new FileReader();
@@ -55,33 +127,56 @@ function processOCR() {
     };
     reader.readAsDataURL(file);
     
-    // Process with Tesseract
-    result.textContent = 'กำลังประมวลผล...';
+    // Compress image first for faster processing
+    result.textContent = '🖼️ กำลังบีบอัดรูปภาพ...';
     
-    Tesseract.recognize(file, 'th+eng', {
-        logger: m => console.log(m)
-    }).then(({ data: { text } }) => {
-        console.log('OCR Text:', text);
-        
-        // Extract serial number
-        const serialRegex = /[0-9]{4}\s?[0-9]{4}\s?[0-9]{8}/g;
-        const matches = text.match(serialRegex);
-        
-        if (matches && matches.length > 0) {
-            const serial = matches[0].replace(/\s/g, '');
-            result.innerHTML = `✅ พบเลขซีเรียล: <strong>${matches[0]}</strong>`;
+    compressImage(file, async (compressedBlob) => {
+        try {
+            result.textContent = '🤖 กำลังอ่านข้อความ...';
             
-            // Auto fetch device
-            setTimeout(() => {
-                fetchAndDisplayDevice(serial);
-            }, 500);
-        } else {
-            result.innerHTML = `⚠️ ไม่พบเลขซีเรียล<br><pre>${text.substring(0, 200)}</pre>`;
+            // Try backend first if configured
+            let ocrResult = null;
+            if (BACKEND_URL) {
+                try {
+                    ocrResult = await processOCRWithBackend(compressedBlob);
+                } catch (e) {
+                    console.warn('Backend OCR failed, falling back to client-side');
+                }
+            }
+            
+            // Fallback to client-side Tesseract
+            if (!ocrResult) {
+                const worker = await initTesseract();
+                const { data: { text } } = await worker.recognize(compressedBlob);
+                ocrResult = { text, serials: extractSerialNumbers(text) };
+            }
+            
+            const serialRegex = /[0-9]{4}\s?[0-9]{4}\s?[0-9]{8}/g;
+            const matches = ocrResult.text.match(serialRegex);
+            
+            if (matches && matches.length > 0) {
+                const serial = matches[0].replace(/\s/g, '');
+                result.innerHTML = `✅ พบเลขซีเรียล: <strong>${matches[0]}</strong>`;
+                
+                setTimeout(() => {
+                    fetchAndDisplayDevice(serial);
+                }, 500);
+            } else {
+                result.innerHTML = `⚠️ ไม่พบเลขซีเรียล<br><pre style="font-size:12px; max-height:150px; overflow:auto;">${ocrResult.text.substring(0, 300)}</pre>`;
+            }
+        } catch (err) {
+            console.error('OCR Error:', err);
+            result.innerHTML = `❌ เกิดข้อผิดพลาด: ${err.message}`;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🤖 วิเคราะห์หรือดึง AI';
         }
-    }).catch(err => {
-        console.error('OCR Error:', err);
-        result.textContent = '❌ เกิดข้อผิดพลาดในการประมวลผล';
-    });
+    }, 600); // Smaller max width for faster processing
+}
+
+function extractSerialNumbers(text) {
+    const serialRegex = /[0-9]{4}\s?[0-9]{4}\s?[0-9]{8}/g;
+    return text.match(serialRegex) || [];
 }
 
 // ========== QR CODE PROCESSING ==========
